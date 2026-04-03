@@ -1,5 +1,7 @@
 # Homelab SIEM
 
+> **Note:** Git history was rewritten to remove sensitive homelab configuration (node IPs, secrets) before public release.
+
 A distributed security monitoring stack I built on three old machines: a Dell Optiplex, an old Dell Inspiron, and a Chromebook running Lubuntu. I connected them into a Docker Swarm cluster and built a SIEM on top of it, mostly to learn, but it's turned into something I actually use and keep improving.
 
 ---
