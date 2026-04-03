@@ -27,7 +27,7 @@ PORT = 8766
 WEBHOOK_SECRET = os.environ.get("IR_WEBHOOK_SECRET", "")
 
 # Suppress repeat investigations for the same (signature, src_ip) within this window
-_DEDUP_FILE = Path("/home/rosse/siem/scripts/ir_dedup.json")
+_DEDUP_FILE = Path(__file__).parent / "ir_dedup.json"
 _ALERT_DEDUP_LOCK = threading.Lock()
 ALERT_DEDUP_TTL = 1800  # 30 minutes
 
@@ -57,11 +57,11 @@ def _record_alert(sig: str, src_ip: str) -> None:
         except Exception as e:
             print(f"[ir] could not write dedup file: {e}")
 
-env = dotenv_values("/home/rosse/.env")
+env = dotenv_values(Path.home() / ".env")
 TELEGRAM_TOKEN = env.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = env.get("TELEGRAM_CHAT_ID", "")
 LITELLM_URL = "http://localhost:4000"
-LITELLM_KEY = env.get("LITELLM_KEY", "sk-gateway-local")
+LITELLM_KEY = env.get("LITELLM_KEY", "")
 
 # IPs we will never block regardless of what Suricata says
 # Configure: set TRUSTED_NODE_IPS in .env as a comma-separated list of your cluster node IPs

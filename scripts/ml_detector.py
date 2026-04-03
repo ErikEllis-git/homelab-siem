@@ -45,7 +45,7 @@ from feature_store import (
 
 # ── Config ──────────────────────────────────────────────────────────────────────
 
-ENV_FILE  = Path("/home/rosse/.env")
+ENV_FILE  = Path.home() / ".env"
 MODEL_DIR = Path(__file__).parent / "models"
 
 # Retrain if model is older than this many hours

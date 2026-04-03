@@ -36,10 +36,11 @@ from feature_store import (
     get_node_history, get_last_node_success,
 )
 from threat_intel import lookup_ips
+from pathlib import Path
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 
-env = dotenv_values("/home/rosse/.env")
+env = dotenv_values(Path.home() / ".env")
 
 ES_HOST = "http://localhost:9200"
 ES_INDEX = "filebeat-*"

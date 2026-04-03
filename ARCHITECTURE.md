@@ -23,7 +23,7 @@ graph TD
         suricata["Suricata 7.0.3\nNetwork IDS\nwlx060c000a5f6e"]
         es["Elasticsearch\nlocalhost:9200\nindices: filebeat-*, cowrie-*, webhoneypot-*"]
         kibana["Kibana\nlocalhost:5601"]
-        scripts["SIEM Scripts\n/home/rosse/siem/scripts/\nbrute_watch, anomaly_detector\ncorrelator, ml_detector"]
+        scripts["SIEM Scripts\n/opt/siem/scripts/\nbrute_watch, anomaly_detector\ncorrelator, ml_detector"]
     end
 
     subgraph Alerting ["Alerting Pipeline"]

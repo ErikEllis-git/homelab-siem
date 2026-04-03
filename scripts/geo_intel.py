@@ -17,7 +17,7 @@ from pathlib import Path
 
 import requests
 
-CACHE_FILE = Path("/home/rosse/siem/scripts/geo_cache.json")
+CACHE_FILE = Path(__file__).parent / "geo_cache.json"
 CACHE_TTL  = timedelta(hours=24)
 API_URL    = "http://ip-api.com/batch"
 FIELDS     = "status,country,countryCode,city,org,isp,query"

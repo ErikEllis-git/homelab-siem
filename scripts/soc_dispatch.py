@@ -26,7 +26,7 @@ WEBHOOK_URL = "http://localhost:8765/webhooks/siem"
 def _load_env() -> dict:
     env = {}
     try:
-        for line in Path("/home/rosse/.env").read_text().splitlines():
+        for line in (Path.home() / ".env").read_text().splitlines():
             line = line.strip()
             if "=" in line and not line.startswith("#"):
                 k, _, v = line.partition("=")

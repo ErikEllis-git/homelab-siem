@@ -16,6 +16,7 @@ import ipaddress
 import requests
 from datetime import datetime, timezone
 from dotenv import dotenv_values
+from pathlib import Path
 
 from threat_intel import lookup_ips, format_enrichment_block
 from geo_intel import geolocate, format_geo
@@ -26,8 +27,8 @@ TELEGRAM_DEDUP_TTL = 7200  # 2 hr — anomaly_detector runs hourly; only alert e
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 # Load both env files; ai-gateway holds the LiteLLM master key
-env        = dotenv_values("/home/rosse/.env")
-env_gw     = dotenv_values("/home/rosse/ai-gateway/.env")
+env        = dotenv_values(Path.home() / ".env")
+env_gw     = dotenv_values(Path.home() / "ai-gateway/.env")
 
 ES_HOST           = "http://localhost:9200"
 LITELLM_URL       = "http://localhost:4000/v1/chat/completions"

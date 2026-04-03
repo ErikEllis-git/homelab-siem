@@ -16,6 +16,7 @@ from datetime import datetime
 
 import requests
 from dotenv import dotenv_values
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(__file__))
 from threat_intel import lookup_ips
@@ -24,7 +25,7 @@ from soc_dispatch import dispatch_brute_force, is_tg_suppressed, record_tg_alert
 
 TELEGRAM_DEDUP_TTL = 1800  # 30 min — at most one Telegram alert per IP per 30 min
 
-env = dotenv_values("/home/rosse/.env")
+env = dotenv_values(Path.home() / ".env")
 TELEGRAM_TOKEN   = env.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = env.get("TELEGRAM_CHAT_ID", "")
 ES_HOST          = "http://localhost:9200"

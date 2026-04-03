@@ -14,7 +14,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
-DB_PATH = Path("/home/rosse/siem/scripts/feature_store.db")
+DB_PATH = Path(__file__).parent / "feature_store.db"
 
 
 def _connect() -> sqlite3.Connection:

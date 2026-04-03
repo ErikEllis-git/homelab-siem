@@ -33,7 +33,7 @@ from geo_intel import format_geo, geolocate
 from soc_dispatch import dispatch_honeypot, is_tg_suppressed, record_tg_alert
 from threat_intel import lookup_ips
 
-ENV_FILE   = Path("/home/rosse/.env")
+ENV_FILE   = Path.home() / ".env"
 ES_HOST    = "http://localhost:9200"
 DEDUP_FILE = Path(__file__).parent / "web_honeypot_dedup.json"
 

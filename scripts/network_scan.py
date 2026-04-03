@@ -8,7 +8,7 @@ network_scan.py — Periodic nmap subnet scan + trusted device presence detectio
 - Stores results in Elasticsearch
 
 Run via cron every 30 minutes:
-  */30 * * * * /home/rosse/siem/scripts/.venv/bin/python3 /home/rosse/siem/scripts/network_scan.py
+  */30 * * * * /opt/siem/scripts/.venv/bin/python3 /opt/siem/scripts/network_scan.py
 """
 
 import json
@@ -16,9 +16,10 @@ import subprocess
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from dotenv import dotenv_values
+from pathlib import Path
 import requests
 
-env = dotenv_values("/home/rosse/.env")
+env = dotenv_values(Path.home() / ".env")
 TELEGRAM_TOKEN   = env.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = env.get("TELEGRAM_CHAT_ID", "")
 
@@ -26,7 +27,7 @@ SUBNET             = env.get("SCAN_SUBNET", "192.168.0.0/24")
 TRUSTED_DEVICE_IP  = env.get("TRUSTED_DEVICE_IP", "")  # Configure: LAN IP of a trusted device to track presence
 ES_HOST            = "http://localhost:9200"
 ES_INDEX           = "nmap-scans"
-BASELINE_FILE      = "/home/rosse/siem/scripts/nmap_baseline.json"
+BASELINE_FILE      = Path(__file__).parent / "nmap_baseline.json"
 
 # Configure: set CLUSTER_NODE_IPS in .env as a comma-separated list of node LAN IPs to port-scan
 CLUSTER_IPS = set(filter(None, env.get("CLUSTER_NODE_IPS", "").split(",")))

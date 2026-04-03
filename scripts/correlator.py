@@ -19,7 +19,7 @@ Scoring:
   SCAN  + BRUTE + ACCESS → CRITICAL (full kill chain observed)
 
 Run via cron every 15 minutes:
-  */15 * * * * /home/rosse/siem/scripts/.venv/bin/python3 /home/rosse/siem/scripts/correlator.py >> /home/rosse/siem/scripts/cron.log 2>&1
+  */15 * * * * /opt/siem/scripts/.venv/bin/python3 /opt/siem/scripts/correlator.py >> /opt/siem/scripts/cron.log 2>&1
 """
 
 import ipaddress
@@ -48,7 +48,7 @@ DEDUP_FILE = Path(__file__).parent / "correlator_dedup.json"
 
 ES_HOST = "http://localhost:9200"
 
-env = dotenv_values("/home/rosse/.env")
+env = dotenv_values(Path.home() / ".env")
 TELEGRAM_TOKEN   = env.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = env.get("TELEGRAM_CHAT_ID", "")
 

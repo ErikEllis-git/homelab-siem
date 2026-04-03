@@ -23,7 +23,7 @@ Usage:
   python3 purple_team.py --no-telegram         # suppress Telegram report
 
 Cron (weekly, Sunday 3:30am):
-  30 3 * * 0  /home/rosse/siem/scripts/.venv/bin/python3 /home/rosse/siem/scripts/purple_team.py >> /home/rosse/siem/scripts/cron.log 2>&1
+  30 3 * * 0  /opt/siem/scripts/.venv/bin/python3 /opt/siem/scripts/purple_team.py >> /opt/siem/scripts/cron.log 2>&1
 """
 
 import argparse
@@ -48,14 +48,14 @@ ES_HOST  = "http://localhost:9200"
 SCRIPTS  = Path(__file__).parent
 DB_PATH  = SCRIPTS / "purple_team.db"
 
-env = dotenv_values("/home/rosse/.env")
+env = dotenv_values(Path.home() / ".env")
 TELEGRAM_TOKEN   = env.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = env.get("TELEGRAM_CHAT_ID", "")
 
 # SSH prefixes for each node (None = local)
 NODES_SSH = {
     "rosse":   None,
-    "worker1": ["ssh", "-i", "/home/rosse/.ssh/id_rsa_swarm",
+    "worker1": ["ssh", "-i", str(Path.home() / ".ssh/id_rsa_swarm"),
                 "-o", "ConnectTimeout=10", "-o", "StrictHostKeyChecking=no",
                 env.get("WORKER1_SSH_TARGET", "user@worker1")],
     "worker2": ["ssh", "-o", "ConnectTimeout=10", "-o", "StrictHostKeyChecking=no",

@@ -14,7 +14,7 @@ from typing import Optional
 
 import requests
 
-CACHE_FILE = Path("/home/rosse/siem/scripts/threat_intel_cache.json")
+CACHE_FILE = Path(__file__).parent / "threat_intel_cache.json"
 CACHE_TTL  = timedelta(hours=1)
 
 FEODO_URL     = "https://feodotracker.abuse.ch/downloads/ipblocklist.txt"

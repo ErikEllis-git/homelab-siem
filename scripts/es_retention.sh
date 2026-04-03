@@ -4,7 +4,7 @@
 
 ES="http://localhost:9200"
 DAYS=30
-LOG="/home/rosse/siem/scripts/cron.log"
+LOG="$(dirname "$0")/cron.log"
 
 echo "" >> "$LOG"
 echo "── ES Retention $(date '+%Y-%m-%d %H:%M:%S') ──" >> "$LOG"

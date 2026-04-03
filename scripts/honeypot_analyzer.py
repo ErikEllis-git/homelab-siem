@@ -41,7 +41,7 @@ from threat_intel import lookup_ips
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-ENV_FILE   = Path("/home/rosse/.env")
+ENV_FILE   = Path.home() / ".env"
 ES_HOST    = "http://localhost:9200"
 DEDUP_FILE   = Path(__file__).parent / "honeypot_dedup.json"
 DIGEST_FILE  = Path(__file__).parent / "honeypot_digest_state.json"

@@ -34,9 +34,9 @@ from threat_intel import lookup_ips
 
 # ── Config ──────────────────────────────────────────────────────────────────────
 
-STATE_FILE = Path("/home/rosse/siem/scripts/outbound_state.json")
+STATE_FILE = Path(__file__).parent / "outbound_state.json"
 
-env = dotenv_values("/home/rosse/.env")
+env = dotenv_values(Path.home() / ".env")
 TELEGRAM_TOKEN   = env.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = env.get("TELEGRAM_CHAT_ID", "")
 
@@ -54,7 +54,7 @@ WHITELIST_PORTS = {
 
 NODES = [
     {"name": "rosse",   "ssh": None},
-    {"name": "worker1", "ssh": ["ssh", "-i", "/home/rosse/.ssh/id_rsa_swarm",
+    {"name": "worker1", "ssh": ["ssh", "-i", str(Path.home() / ".ssh/id_rsa_swarm"),
                                  "-o", "ConnectTimeout=10",
                                  "-o", "StrictHostKeyChecking=no",
                                  env.get("WORKER1_SSH_TARGET", "user@worker1")]},
@@ -76,6 +76,10 @@ _PRIVATE_NETS = [
     ipaddress.ip_network("127.0.0.0/8"),
     ipaddress.ip_network("203.0.113.0/24"),   # RFC 5737 TEST-NET-3 -- purple team
     ipaddress.ip_network("198.51.100.0/24"),  # RFC 5737 TEST-NET-2 -- purple team
+    # IPv6 private/loopback
+    ipaddress.ip_network("::1/128"),          # IPv6 loopback
+    ipaddress.ip_network("fc00::/7"),         # IPv6 unique local (fd00::/8 included)
+    ipaddress.ip_network("fe80::/10"),        # IPv6 link-local
 ]
 
 # Tailscale DERP relay servers — expected outbound, not flagged

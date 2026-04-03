@@ -18,7 +18,7 @@ COOLDOWN_SECONDS = 3600  # same signature silenced for 1 hour
 POLL_INTERVAL    = 2     # seconds between file checks
 COOLDOWN_FILE    = Path(__file__).parent / "suricata_cooldowns.json"
 
-env = dotenv_values("/home/rosse/.env")
+env = dotenv_values(Path.home() / ".env")
 TELEGRAM_TOKEN   = env.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = env.get("TELEGRAM_CHAT_ID", "")
 

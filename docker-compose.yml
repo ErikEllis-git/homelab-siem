@@ -16,7 +16,7 @@ services:
         soft: 65536
         hard: 65536
     volumes:
-      - /home/rosse/swarm-data/elasticsearch_data:/usr/share/elasticsearch/data
+      - ${HOME}/swarm-data/elasticsearch_data:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
     networks:
