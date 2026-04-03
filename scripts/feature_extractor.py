@@ -39,6 +39,8 @@ from threat_intel import lookup_ips
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 
+env = dotenv_values("/home/rosse/.env")
+
 ES_HOST = "http://localhost:9200"
 ES_INDEX = "filebeat-*"
 
