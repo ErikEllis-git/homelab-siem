@@ -1,0 +1,66 @@
+# =============================================================
+#  Filebeat 8.15 — SIEM Sensor Config
+#  Deployed via Docker Swarm global service (rosse, LUBUNT, OLDDELL)
+# =============================================================
+
+# ── Inputs ────────────────────────────────────────────────────
+
+filebeat.inputs:
+
+  # Docker container logs
+  # The 'container' type natively handles Docker's JSON log format
+  # and decodes stream/timestamp metadata correctly.
+  - type: container
+    id: docker-containers
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+
+  # Suricata EVE JSON alerts and network events
+  - type: log
+    id: suricata-eve
+    paths:
+      - /var/log/suricata/eve.json
+    ignore_missing: true
+    json.keys_under_root: true
+    json.add_error_key: true
+    fields:
+      log_type: suricata
+      dataset: suricata.eve
+    fields_under_root: true
+
+  # Host auth / security logs (SSH logins, sudo, PAM events)
+  # ignore_missing: true handles OLDDELL if it uses /var/log/secure (RHEL-style)
+  - type: log
+    id: host-auth
+    paths:
+      - /var/log/auth.log
+      - /var/log/secure
+    ignore_missing: true
+    fields:
+      log_type: auth
+      dataset: system.auth
+    fields_under_root: true
+
+# ── Output ────────────────────────────────────────────────────
+
+output.elasticsearch:
+  hosts: ["${ES_HOST}"]
+
+# ── Setup / ILM ───────────────────────────────────────────────
+
+# Disable Index Lifecycle Management — use simple daily indices instead
+setup.ilm.enabled: false
+
+# ── Processors (global) ───────────────────────────────────────
+
+processors:
+  # Tags every event with the originating host's metadata
+  - add_host_metadata: ~
+
+# ── Logging ───────────────────────────────────────────────────
+
+logging.level: info
+logging.to_stderr: true

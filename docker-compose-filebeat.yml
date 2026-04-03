@@ -1,0 +1,49 @@
+# =============================================================
+#  Filebeat — Global Swarm Sensor Stack
+#  Deploys one Filebeat agent on every Swarm node.
+#
+#  NOTE: filebeat.yml is distributed via Docker Swarm Configs
+#  (stored in the Raft consensus DB), not a bind-mount.
+#  This is required because a bind-mount of a path that only
+#  exists on rosse would cause the service to fail on LUBUNT
+#  and OLDDELL. Docker Configs solve this automatically.
+# =============================================================
+
+services:
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.15.0
+    user: root
+    # -e    → log to stderr (visible in docker service logs)
+    # --strict.perms=false → suppress ownership false-positives
+    #   that can occur when config is injected via Docker Config
+    #   objects rather than a regular filesystem file.
+    command: ["filebeat", "-e", "--strict.perms=false"]
+    configs:
+      - source: filebeat_config_v2
+        target: /usr/share/filebeat/filebeat.yml
+        mode: 0600
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/log:/var/log:ro
+    networks:
+      hostnet: {}
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+
+configs:
+  filebeat_config_v2:
+    file: ./filebeat/filebeat.yml
+
+# Host networking gives each container direct access to the host's
+# network stack, including the tailscale0 interface needed to reach
+# the Elasticsearch node (configured via ES_HOST env var) from worker nodes.
+networks:
+  hostnet:
+    external: true
+    name: host

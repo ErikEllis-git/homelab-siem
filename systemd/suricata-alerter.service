@@ -1,0 +1,13 @@
+[Unit]
+Description=Suricata IDS Telegram Alerter
+After=network.target suricata.service
+
+[Service]
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/rosse/siem/scripts/.venv/bin/python3 /home/rosse/siem/scripts/suricata_alerter.py
+Restart=on-failure
+RestartSec=10
+User=rosse
+
+[Install]
+WantedBy=multi-user.target

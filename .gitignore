@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# Runtime state — generated at runtime, not for version control
+scripts/*_dedup.json
+scripts/*_cache.json
+scripts/*_state.json
+scripts/*_cooldowns.json
+scripts/cron.log
+scripts/nmap_baseline.json
+
+# Databases — live data
+scripts/*.db
+
+# ML models — binary artifacts, retrain on deploy
+scripts/models/*.joblib
+
+# Secrets
+.env
+*.env

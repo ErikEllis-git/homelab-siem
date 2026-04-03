@@ -1,0 +1,14 @@
+[Unit]
+Description=Suricata Autonomous Incident Responder
+After=network.target suricata-alerter.service
+
+[Service]
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/home/rosse/.env
+ExecStart=/home/rosse/siem/scripts/.venv/bin/python3 /home/rosse/siem/scripts/incident_responder.py
+Restart=on-failure
+RestartSec=10
+User=rosse
+
+[Install]
+WantedBy=multi-user.target
