@@ -135,3 +135,12 @@ auth.log / suricata / cowrie logs
 ---
 
 Built on a Dell Optiplex 7010, a Dell Inspiron, and a Chromebook. Total hardware cost: $0.
+
+---
+
+## Deployment note (2026-09-13 rebuild)
+
+Scripts read `.env` from `Path.home() / ".env"` (i.e. `~/.env`), not from the
+repo directory. Deploy by symlinking: `ln -sf ~/repos/homelab-siem/.env ~/.env`
+after populating the real file. Without this, every script silently runs with
+an empty env (no crash, no error — just missing secrets/config).
