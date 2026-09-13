@@ -19,6 +19,8 @@ services:
     #   that can occur when config is injected via Docker Config
     #   objects rather than a regular filesystem file.
     command: ["filebeat", "-e", "--strict.perms=false"]
+    environment:
+      - ES_HOST=${ES_HOST}
     configs:
       - source: filebeat_config_v2
         target: /usr/share/filebeat/filebeat.yml
