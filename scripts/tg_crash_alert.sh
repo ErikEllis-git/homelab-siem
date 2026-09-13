@@ -1,9 +1,9 @@
 #!/bin/bash
 # Send a Telegram crash alert. Usage: tg_crash_alert.sh "message text"
-# Loads TELEGRAM_TOKEN and TELEGRAM_CHAT_ID from /home/rosse/.env
+# Loads TELEGRAM_TOKEN and TELEGRAM_CHAT_ID from /home/rosee/repos/homelab-siem/.env
 set -euo pipefail
 
-ENV_FILE="/home/rosse/.env"
+ENV_FILE="/home/rosee/repos/homelab-siem/.env"
 if [ ! -f "$ENV_FILE" ]; then
     echo "ERROR: $ENV_FILE not found" >&2
     exit 1
