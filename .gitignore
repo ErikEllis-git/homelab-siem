@@ -21,3 +21,4 @@ scripts/models/*.joblib
 # Secrets
 .env
 *.env
+watchdog_state.json
