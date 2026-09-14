@@ -1,0 +1,20 @@
+model_list:
+  - model_name: openrouter/llama-3.3-70b
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.3-70b-instruct
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: openrouter/gemma-3-27b
+    litellm_params:
+      model: openrouter/google/gemma-3-27b-it
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: openrouter/mistral-small-3.1
+    litellm_params:
+      model: openrouter/mistralai/mistral-small-3.1-24b-instruct
+      api_key: os.environ/OPENROUTER_API_KEY
+
+router_settings:
+  fallbacks:
+    - openrouter/llama-3.3-70b: ["openrouter/gemma-3-27b", "openrouter/mistral-small-3.1"]
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
