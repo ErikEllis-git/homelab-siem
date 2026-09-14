@@ -70,7 +70,9 @@ def log_request(matched_rule: str, cmd: str = "") -> None:
 
     doc = {
         "@timestamp": datetime.now(timezone.utc).isoformat(),
-        "src_ip": request.headers.get("X-Forwarded-For", request.remote_addr),
+        # P2-3: remote_addr is authoritative (XFF is attacker-spoofable).
+        "src_ip": request.remote_addr,
+        "xff_untrusted": request.headers.get("X-Forwarded-For", ""),
         "method": request.method,
         "path": request.path,
         "matched_rule": matched_rule,
