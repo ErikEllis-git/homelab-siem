@@ -8,6 +8,7 @@ services:
       - xpack.security.enabled=false
       - ES_JAVA_OPTS=-Xms2g -Xmx2g
       - bootstrap.memory_lock=true
+      - path.repo=/usr/share/elasticsearch/snapshots
     ulimits:
       memlock:
         soft: -1
@@ -17,6 +18,7 @@ services:
         hard: 65536
     volumes:
       - ${HOME}/swarm-data/elasticsearch_data:/usr/share/elasticsearch/data
+      - ${HOME}/swarm-data/es_snapshots:/usr/share/elasticsearch/snapshots
     ports:
       - "127.0.0.1:9200:9200"
       - "100.107.153.112:9200:9200"
