@@ -21,6 +21,7 @@ from pathlib import Path
 from threat_intel import lookup_ips, format_enrichment_block
 from geo_intel import geolocate, format_geo
 from soc_dispatch import dispatch_anomaly, is_tg_suppressed, record_tg_alert
+from es_fields import LOG_TYPE, HOST_NAME
 
 TELEGRAM_DEDUP_TTL = 7200  # 2 hr — anomaly_detector runs hourly; only alert every other run at most
 
@@ -128,7 +129,7 @@ def fetch_logs() -> list[dict]:
     # Auth log events: any host-level auth event matching known suspicious phrases
     auth_clause = {
         "bool": {
-            "filter": [{"term": {"log_type": "auth"}}],
+            "filter": [{"term": {LOG_TYPE: "auth"}}],
             "should": [{"match_phrase": {"message": p}} for p in AUTH_PHRASES],
             "minimum_should_match": 1,
         }
@@ -145,7 +146,7 @@ def fetch_logs() -> list[dict]:
     suricata_clause = {
         "bool": {
             "filter": [
-                {"term": {"log_type": "suricata"}},
+                {"term": {LOG_TYPE: "suricata"}},
                 {"term": {"event_type": "alert"}},
                 {"terms": {"alert.severity": [1, 2]}},
             ]
@@ -207,7 +208,7 @@ def format_logs(hits: list[dict]) -> str:
         ts        = src.get("@timestamp", "")[:19].replace("T", " ")
         host      = (src.get("host") or {}).get("name", "unknown")
 
-        if src.get("log_type") == "suricata":
+        if src.get(LOG_TYPE) == "suricata":
             sig      = src.get("alert.signature") or (src.get("alert") or {}).get("signature", "unknown")
             sev      = src.get("alert.severity") or (src.get("alert") or {}).get("severity", "?")
             cat      = src.get("alert.category") or (src.get("alert") or {}).get("category", "")
@@ -257,7 +258,7 @@ def filter_trusted_hits(hits: list[dict]) -> list[dict]:
     filtered = []
     for hit in hits:
         src = hit["_source"]
-        log_type = src.get("log_type")
+        log_type = src.get(LOG_TYPE)
 
         if log_type == "suricata":
             src_ip = src.get("src_ip", "")
@@ -290,7 +291,7 @@ def cross_node_summary(hits: list[dict]) -> str:
     for hit in hits:
         src = hit["_source"]
         # Get the node this event came from
-        node = (src.get("host") or {}).get("name") or src.get("host_name", "unknown")
+        node = (src.get("host") or {}).get("name") or src.get(HOST_NAME, "unknown")
         # Collect IPs from message and explicit src_ip field
         candidate_ips = set()
         if src.get("src_ip"):

@@ -38,6 +38,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from geo_intel import format_geo, geolocate
 from soc_dispatch import dispatch_honeypot, dispatch_honeypot_digest, is_tg_suppressed, record_tg_alert
 from threat_intel import lookup_ips
+from es_fields import LOG_TYPE, HOST_NAME
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -252,11 +253,11 @@ def cross_reference_ips(ips: list[str]) -> dict[str, list[str]]:
                         {"range": {"@timestamp": {"gte": "now-24h"}}},
                         {"match_phrase": {"message": ip}},
                         # auth logs only — excludes tailscaled, syslog noise, etc.
-                        {"term": {"fields.log_type": "auth"}},
+                        {"term": {LOG_TYPE: "auth"}},
                     ],
                 }
             },
-            "aggs": {"by_node": {"terms": {"field": "host_name", "size": 5}}},
+            "aggs": {"by_node": {"terms": {"field": HOST_NAME, "size": 5}}},
         }
         try:
             resp = requests.post(
