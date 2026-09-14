@@ -22,3 +22,4 @@ scripts/models/*.joblib
 .env
 *.env
 watchdog_state.json
+scripts/disk_health_state.json
