@@ -4,10 +4,10 @@ After=network.target suricata.service
 
 [Service]
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/home/rosse/siem/scripts/.venv/bin/python3 /home/rosse/siem/scripts/suricata_alerter.py
+ExecStart=/home/rosee/repos/homelab-siem/scripts/.venv/bin/python3 /home/rosee/repos/homelab-siem/scripts/suricata_alerter.py
 Restart=on-failure
 RestartSec=10
-User=rosse
+User=rosee
 
 [Install]
 WantedBy=multi-user.target

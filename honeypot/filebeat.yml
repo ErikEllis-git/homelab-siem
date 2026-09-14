@@ -1,0 +1,43 @@
+filebeat.inputs:
+  - type: log
+    id: cowrie-json
+    paths:
+      - /var/log/cowrie/cowrie.json
+    ignore_missing: true
+    json.keys_under_root: true
+    json.add_error_key: true
+    fields:
+      log_type: cowrie
+      dataset: cowrie.session
+    fields_under_root: true
+
+  - type: log
+    id: webhoneypot-json
+    paths:
+      - /var/log/webhoneypot/access.json
+    ignore_missing: true
+    json.keys_under_root: true
+    json.add_error_key: true
+    fields:
+      log_type: webhoneypot
+      dataset: webhoneypot.request
+    fields_under_root: true
+
+output.elasticsearch:
+  hosts: ["http://100.107.153.112:9200"]
+  indices:
+    - index: "cowrie-%{+yyyy.MM.dd}"
+      when.equals:
+        log_type: "cowrie"
+    - index: "webhoneypot-%{+yyyy.MM.dd}"
+      when.equals:
+        log_type: "webhoneypot"
+
+setup.template.enabled: false
+setup.ilm.enabled: false
+
+processors:
+  - add_host_metadata: ~
+
+logging.level: info
+logging.to_stderr: true
