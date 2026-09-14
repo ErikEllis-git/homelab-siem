@@ -35,6 +35,7 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - TELEMETRY_ENABLED=false
+      - CSP_STRICT=false
     ports:
       - "5601:5601"
     networks:
