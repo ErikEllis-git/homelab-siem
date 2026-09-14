@@ -17,7 +17,7 @@ ES_HOST="http://100.107.153.112:9200"   # rosee over Tailscale
 docker rm -f cowrie 2>/dev/null || true
 mkdir -p ~/cowrie/var/lib/cowrie ~/cowrie/var/log/cowrie ~/cowrie/var/run
 sudo chown -R 999:999 ~/cowrie/var         # cowrie container runs as uid 999
-docker run -d --name cowrie --restart unless-stopped \
+docker run -d --name cowrie --restart unless-stopped --memory 512m \
   -p 22:2222 \
   -v ~/cowrie/etc:/cowrie/cowrie-git/etc \
   -v ~/cowrie/var:/cowrie/cowrie-git/var \
@@ -26,14 +26,14 @@ docker run -d --name cowrie --restart unless-stopped \
 # --- Web honeypot: Flask/gunicorn behind fake Apache headers, host :80 -> :8080 ---
 cd ~/webhoneypot && docker build -t webhoneypot .
 docker rm -f webhoneypot 2>/dev/null || true
-docker run -d --name webhoneypot --restart unless-stopped \
+docker run -d --name webhoneypot --restart unless-stopped --memory 512m \
   -p 80:8080 \
   -v ~/webhoneypot/logs:/app/logs \
   webhoneypot
 
 # --- Filebeat: ships cowrie + web honeypot logs to rosee's ES over Tailscale ---
 docker rm -f filebeat-honeypot 2>/dev/null || true
-docker run -d --name filebeat-honeypot --restart unless-stopped \
+docker run -d --name filebeat-honeypot --restart unless-stopped --memory 512m \
   --user root \
   -v ~/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro \
   -v ~/cowrie/var/log/cowrie:/var/log/cowrie:ro \
