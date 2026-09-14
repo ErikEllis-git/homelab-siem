@@ -223,7 +223,7 @@ def dispatch_honeypot(
             did = "password spray, no shell"
 
         if cross_node_ips and s.get("src_ip") in cross_node_ips:
-            action = "BLOCKED"
+            action = "MONITORING (cross-node)"
 
         messages.append(f"🍯 {s['src_ip']}{geo}{intel}\nDid: {did}\nAction: {action}")
 
