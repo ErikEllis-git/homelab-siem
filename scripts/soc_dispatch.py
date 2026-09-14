@@ -147,6 +147,19 @@ def _post(event_type: str, payload: dict) -> bool:
         return False
 
 
+def _post_webhook_or_telegram(event_type: str, payload: dict, telegram_text: str) -> bool:
+    """Try the claude-telegram webhook; on ANY failure (refused, non-2xx, timeout),
+    fall back to sending telegram_text directly via Telegram.
+
+    This exists because the :8765 claude-telegram webhook has been retired —
+    without a fallback, alerts routed through _post() silently vanish.
+    """
+    if _post(event_type, payload):
+        return True
+    print("[dispatch] webhook unavailable, falling back to direct Telegram")
+    return _send_telegram(telegram_text)
+
+
 def dispatch_brute_force(
     attackers: list[dict],
     lookback: str = "5m",
@@ -322,7 +335,14 @@ def dispatch_anomaly(
         return False
 
     print(f"[dispatch] escalating {severity} anomaly to Claude — nodes: {nodes_affected}")
-    result = _post("siem_anomaly", payload)
+
+    tg_lines = [f"🚨 {severity} Anomaly — {threat}", f"Nodes: {nodes_affected}", "", summary]
+    if threat_intel:
+        tg_lines.append(f"TI: {threat_intel}")
+    tg_lines.append(f"Recommendation: {recommendation}")
+    telegram_text = "\n\n".join(tg_lines)
+
+    result = _post_webhook_or_telegram("siem_anomaly", payload, telegram_text)
     if result:
         _record_dispatch(dedup_key, ttl=ANOMALY_DEDUP_TTL)
     return result
