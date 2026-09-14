@@ -194,6 +194,35 @@ def send_telegram(text: str) -> None:
 # Core logic
 # ---------------------------------------------------------------------------
 
+def _is_block(d: dict) -> bool:
+    """Strict, safe coercion of the LLM decision's 'block' field.
+
+    Returns True only when block is the real boolean True, or the exact
+    (case-insensitive) string "true"/"yes"; confidence must be exactly
+    "medium" or "high"; threat must be truthy. Anything unexpected -> False.
+    """
+    if not isinstance(d, dict):
+        print(f"[ir] _is_block: rejecting non-dict decision: {d!r}")
+        return False
+
+    block = d.get("block")
+    if block is True:
+        block_ok = True
+    elif isinstance(block, str) and block.strip().lower() in ("true", "yes"):
+        block_ok = True
+    else:
+        block_ok = False
+
+    confidence = d.get("confidence")
+    confidence_ok = isinstance(confidence, str) and confidence.strip().lower() in ("medium", "high")
+
+    threat_ok = bool(d.get("threat"))
+
+    result = block_ok and confidence_ok and threat_ok
+    if not result:
+        print(f"[ir] _is_block: rejected decision block={block!r} confidence={confidence!r} threat={d.get('threat')!r} raw={d!r}")
+    return result
+
 def handle_alert(event: dict) -> None:
     severity = event.get("alert", {}).get("severity", 99)
     src_ip = event.get("src_ip", "")
@@ -225,7 +254,7 @@ def handle_alert(event: dict) -> None:
     inv = investigate(src_ip)
     decision = llm_decide(event, inv[:4000])  # cap to ~1k tokens
 
-    should_block = decision.get("block") and decision.get("confidence") in ("medium", "high")
+    should_block = _is_block(decision)
     action = block_ip(src_ip) if should_block else "Monitoring only (no block)"
 
     report = (
