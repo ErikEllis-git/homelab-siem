@@ -18,7 +18,8 @@ services:
     volumes:
       - ${HOME}/swarm-data/elasticsearch_data:/usr/share/elasticsearch/data
     ports:
-      - "9200:9200"
+      - "127.0.0.1:9200:9200"
+      - "100.107.153.112:9200:9200"
     networks:
       - siem-net
     restart: unless-stopped
