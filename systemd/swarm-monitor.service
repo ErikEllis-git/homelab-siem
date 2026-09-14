@@ -1,0 +1,13 @@
+[Unit]
+Description=Docker Swarm health status page
+After=network.target docker.service
+
+[Service]
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /home/rosee/repos/homelab-siem/scripts/swarm_monitor.py
+Restart=on-failure
+RestartSec=10
+User=rosee
+
+[Install]
+WantedBy=multi-user.target
