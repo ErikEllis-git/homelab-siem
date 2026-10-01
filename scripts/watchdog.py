@@ -7,6 +7,11 @@ Checks:
   - incident-responder.service  (systemd)
   - swarm-monitor.service       (systemd)
   - litellm-gateway             (docker container)
+  - elasticsearch               (HTTP on 127.0.0.1:9200, cluster not red)
+
+Added 2026-10-01 after ES sat dead for 5 days unnoticed (see INCIDENTS.md,
+Incident 002). Everything else in the SIEM depends on ES, so a silent ES
+outage blinds the whole pipeline.
 
 Runs via cron every 10 min. Dedups: only alerts once per outage (won't spam
 every 10 min while something stays down), and sends a recovery message when
@@ -27,11 +32,23 @@ env = dotenv_values(ENV_FILE)
 TELEGRAM_TOKEN = env.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = env.get("TELEGRAM_CHAT_ID", "")
 
+ES_HEALTH_URL = "http://127.0.0.1:9200/_cluster/health"
+
 CHECKS = {
     "incident-responder": lambda: _systemd_active("incident-responder"),
     "swarm-monitor": lambda: _systemd_active("swarm-monitor"),
     "litellm-gateway": lambda: _docker_running("litellm-gateway"),
+    "elasticsearch": lambda: _es_healthy(),
 }
+
+
+def _es_healthy() -> bool:
+    """ES answers and the cluster is not red (yellow is normal: single node)."""
+    try:
+        r = requests.get(ES_HEALTH_URL, timeout=5)
+        return r.status_code == 200 and r.json().get("status") in ("green", "yellow")
+    except Exception:
+        return False
 
 
 def _systemd_active(unit: str) -> bool:

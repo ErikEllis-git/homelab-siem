@@ -73,4 +73,67 @@ behind Tailscale. The honeypot exists specifically to observe attacks like this.
 
 ---
 
+## Incident 002 — SIEM blind for 5 days: Elasticsearch down after a hard reboot
+
+**Date:** 2026-09-26 07:17 EDT (detected 2026-10-01)
+**Source:** Operational failure, not an attack
+**Severity:** HIGH (silent loss of the entire detection pipeline)
+
+### What Happened
+
+The rosee host (Optiplex 7010) lost power or hard-reset at 07:15:31 EDT on Sep 26. The journal
+for the previous boot simply stops: no shutdown sequence, no kernel panic trace, no OOM. It was
+off for ~2 minutes and came back on a newer kernel (6.14.0-27 → 7.0.0-34). The root cause of the
+power loss was **not determined** (`/var/crash` empty; pstore not readable without root). The
+box has a known history of a corroded/sticky power button and no UPS.
+
+On the way back up, Elasticsearch died ~18 seconds after boot and **stayed dead for ~5 days**.
+Every ES-dependent script (correlator, brute_watch, anomaly/ML detectors, honeypot analyzers,
+morning report) ran from cron against a dead ES. Nothing alerted, because the watchdog did not
+cover ES.
+
+### Root Cause
+
+A side effect of **P0-1** (REMEDIATION.md), which bound ES port 9200 to the Tailscale IP
+`100.107.153.112`. At boot, `dockerd` started before `tailscaled` had brought `tailscale0` up, so
+the publish failed:
+
+```
+failed to bind host port 100.107.153.112:9200/tcp: cannot assign requested address
+```
+
+Docker's `restart: unless-stopped` policy did **not** retry a container whose network setup
+failed. A plain `docker start elasticsearch` then crash-looped: the half-created container's
+hostname could not be resolved (`UnknownHostException`), so it had to be recreated.
+
+### Recovery
+
+```bash
+cd ~/repos/homelab-siem
+docker compose up -d --force-recreate elasticsearch   # data is on bind mounts, nothing lost
+```
+
+Cluster returned to yellow (single node; only replica shards unassigned, which is normal) with
+all primaries started. Filebeat/Cowrie/web-honeypot resumed shipping; shippers appear to have
+backfilled from their saved offsets, but Suricata/auth gaps during the outage were not verified.
+
+### Fixes
+
+1. **Boot ordering:** `systemd/docker.service.d/10-after-tailscale.conf` makes `docker.service`
+   start after `tailscaled.service` and wait (max 60s) for the `tailscale0` address.
+2. **Detection:** `scripts/watchdog.py` now checks Elasticsearch (HTTP 200, cluster not red)
+   every 10 minutes and alerts on Telegram (DOWN / RECOVERED).
+3. **Docs:** failure mode recorded in REMEDIATION.md (P0-1 side effect) and the README.
+
+### Lessons
+
+- A security change that adds a startup dependency (binding to a specific interface IP) needs a
+  boot-order check, not just a live acceptance test. The P0-1 acceptance tests all passed while
+  the system was running; none exercised a cold boot.
+- A monitor that doesn't watch its own datastore isn't monitoring. The pipeline's single point of
+  failure (ES) was the one thing the watchdog skipped.
+- Still open: a UPS, and finding out why the box lost power.
+
+---
+
 *More incidents will be added as the SIEM catches them.*

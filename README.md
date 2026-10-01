@@ -78,11 +78,14 @@ siem/
 │   ├── outbound_monitor.py     # Unexpected outbound connection detection
 │   ├── network_scan.py         # LAN device inventory
 │   ├── purple_team.py          # Weekly automated detection coverage tests
+│   ├── watchdog.py             # Health checks (ES, incident-responder, swarm-monitor, LiteLLM)
 │   ├── es_retention.sh         # Index cleanup
 │   └── requirements.txt
 └── systemd/
     ├── suricata-alerter.service
-    └── incident-responder.service
+    ├── incident-responder.service
+    └── docker.service.d/
+        └── 10-after-tailscale.conf  # docker waits for tailscale0 (ES binds the Tailscale IP)
 ```
 
 ---
@@ -135,6 +138,23 @@ auth.log / suricata / cowrie logs
 ---
 
 Built on a Dell Optiplex 7010, a Dell Inspiron, and a Chromebook. Total hardware cost: $0.
+
+---
+
+## Boot-order note (2026-10-01)
+
+Elasticsearch publishes port 9200 on the node's Tailscale IP. If Docker starts before Tailscale
+has assigned that address, the container fails to bind and is **not** retried by Docker's restart
+policy. Install the drop-in so Docker waits for Tailscale:
+
+```bash
+sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo cp systemd/docker.service.d/10-after-tailscale.conf /etc/systemd/system/docker.service.d/
+sudo systemctl daemon-reload
+```
+
+`watchdog.py` also alerts on Telegram if ES is down or the cluster is red. See `INCIDENTS.md`
+(Incident 002).
 
 ---
 

@@ -35,6 +35,13 @@ and every client ships over Tailscale):
    `100.64.0.0/10` (Tailscale CGNAT), drop from everywhere else. Persist with
    `netfilter-persistent save`.
 3. `docker compose up -d elasticsearch` to re-publish.
+> **Post-implementation note (2026-10-01):** binding to the Tailscale IP creates a boot-order
+> dependency. After a hard reboot on 2026-09-26, `dockerd` started before `tailscale0` had its
+> address, the bind failed, and ES stayed down for 5 days (INCIDENTS.md, Incident 002). Fixed by
+> `systemd/docker.service.d/10-after-tailscale.conf` (docker waits for tailscaled + the IP) and
+> an ES check in `watchdog.py`. Add a **cold-boot test** to this task's acceptance criteria:
+> reboot and confirm ES is up within ~2 minutes with no manual action.
+
 **Acceptance test**:
 - `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9200/_cat/indices` → `200`
 - from rikdell over Tailscale: `curl ... http://100.107.153.112:9200/_cat/indices` → `200`
