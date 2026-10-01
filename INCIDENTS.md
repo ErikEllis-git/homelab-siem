@@ -114,10 +114,25 @@ docker compose up -d --force-recreate elasticsearch   # data is on bind mounts, 
 ```
 
 Cluster returned to yellow (single node; only replica shards unassigned, which is normal) with
-all primaries started. Filebeat/Cowrie/web-honeypot resumed shipping and **backfilled the gap from
-their saved offsets**: `filebeat-*` holds ~17.5k events for each of 09-27 through 10-01 (no hole).
-Note the last ES snapshot before the outage was 2026-09-26 02:30Z; the daily SLM policy resumes
-on its own schedule.
+all primaries started. Shippers resumed, but **the backfill was imperfect** (checked 2026-10-01):
+
+- **Docker container logs** were backfilled with correct timestamps (~17.5k/day for 09-27..09-30).
+- **Suricata (`eve.json`) and auth logs were re-ingested stamped with the ingest time**
+  (`@timestamp` = 2026-10-01 18:10-18:15Z, ~311k docs in one 10-minute bucket). The real event
+  time is only in the `timestamp` field (Suricata) or inside `message` (auth). Time-windowed
+  queries over 09-27..10-01 will not see these events at their real times, and any "last 24h"
+  view (e.g. tomorrow's morning report) is inflated by the backlog.
+- **Gap: Suricata events from 2026-09-26 07:17 EDT to 2026-09-27 00:00 EDT never reached ES.** The
+  log rotated at midnight into `/var/log/suricata/eve.json.1.gz`, and Filebeat only reads the live
+  `eve.json`. The data still exists on rosee (34 MB) and can be re-ingested if wanted.
+- **Auth log was re-read from 2026-09-20**, so ~6 days of auth events (09-20..09-26) that were
+  already indexed now exist twice (the second copy stamped 10-01). Harmless for the 5-minute
+  brute-force window, but it inflates counts that span the backlog.
+- **No false alerts or blocks resulted:** the correlator ran twice after the flood and found no
+  signals, nothing was dispatched, and there are no iptables DROP rules.
+
+The last ES snapshot before the outage was 2026-09-26 02:30Z; the daily SLM policy resumes on
+its own schedule.
 
 ### Fixes
 
@@ -126,6 +141,9 @@ on its own schedule.
 2. **Detection:** `scripts/watchdog.py` now checks Elasticsearch (HTTP 200, cluster not red)
    every 10 minutes and alerts on Telegram (DOWN / RECOVERED).
 3. **Docs:** failure mode recorded in REMEDIATION.md (P0-1 side effect) and the README.
+4. **Side fixes found while verifying:** `geo_intel.py` now sends ip-api.com lookups in chunks of
+   100 (the batch endpoint rejects more, so runs with >100 new IPs lost all geo data); `selftest.py`
+   (P2-6) committed and scheduled daily.
 
 ### Lessons
 
@@ -134,6 +152,9 @@ on its own schedule.
   the system was running; none exercised a cold boot.
 - A monitor that doesn't watch its own datastore isn't monitoring. The pipeline's single point of
   failure (ES) was the one thing the watchdog skipped.
+- Filebeat only reads the live log file, so a long outage across a log rotation loses the rotated
+  (gzipped) data, and without a `timestamp` processor Suricata/auth events are stamped with their
+  read time rather than their event time. Both are worth fixing in `filebeat/filebeat.yml`.
 - Still open: a UPS, and finding out why the box lost power.
 
 ---

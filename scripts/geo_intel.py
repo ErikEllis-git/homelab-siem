@@ -20,6 +20,7 @@ import requests
 CACHE_FILE = Path(__file__).parent / "geo_cache.json"
 CACHE_TTL  = timedelta(hours=24)
 API_URL    = "http://ip-api.com/batch"
+BATCH_LIMIT = 100  # ip-api.com batch endpoint max
 FIELDS     = "status,country,countryCode,city,org,isp,query"
 
 _PRIVATE_PREFIXES = ("10.", "192.168.", "127.", "::1", "100.64.", "100.8")
@@ -59,11 +60,15 @@ def geolocate(ip_list: list[str]) -> dict[str, dict]:
     cache    = _load_cache()
     to_fetch = [ip for ip in external if ip not in cache or not _is_fresh(cache[ip])]
 
-    if to_fetch:
+    # ip-api.com's batch endpoint rejects >100 IPs per request with a 422, so
+    # fetch in chunks and keep whatever succeeds if one chunk fails.
+    fetched = 0
+    for i in range(0, len(to_fetch), BATCH_LIMIT):
+        chunk = to_fetch[i:i + BATCH_LIMIT]
         try:
             resp = requests.post(
                 API_URL,
-                json=[{"query": ip, "fields": FIELDS} for ip in to_fetch],
+                json=[{"query": ip, "fields": FIELDS} for ip in chunk],
                 timeout=10,
             )
             resp.raise_for_status()
@@ -81,10 +86,12 @@ def geolocate(ip_list: list[str]) -> dict[str, dict]:
                         "org":          org,
                         "cached_at":    now,
                     }
-            _save_cache(cache)
-            print(f"[geo] fetched {len(to_fetch)} IP(s) from ip-api.com")
+            fetched += len(chunk)
         except Exception as e:
-            print(f"[geo] lookup failed: {e}")
+            print(f"[geo] lookup failed for {len(chunk)} IP(s): {e}")
+    if fetched:
+        _save_cache(cache)
+        print(f"[geo] fetched {fetched} IP(s) from ip-api.com")
 
     return {ip: cache[ip] for ip in external if ip in cache}
 
