@@ -114,8 +114,10 @@ docker compose up -d --force-recreate elasticsearch   # data is on bind mounts, 
 ```
 
 Cluster returned to yellow (single node; only replica shards unassigned, which is normal) with
-all primaries started. Filebeat/Cowrie/web-honeypot resumed shipping; shippers appear to have
-backfilled from their saved offsets, but Suricata/auth gaps during the outage were not verified.
+all primaries started. Filebeat/Cowrie/web-honeypot resumed shipping and **backfilled the gap from
+their saved offsets**: `filebeat-*` holds ~17.5k events for each of 09-27 through 10-01 (no hole).
+Note the last ES snapshot before the outage was 2026-09-26 02:30Z; the daily SLM policy resumes
+on its own schedule.
 
 ### Fixes
 
