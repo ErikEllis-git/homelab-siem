@@ -22,13 +22,16 @@ services:
     environment:
       - ES_HOST=${ES_HOST}
     configs:
-      - source: filebeat_config_v2
+      - source: filebeat_config_v3
         target: /usr/share/filebeat/filebeat.yml
         mode: 0600
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/log:/var/log:ro
+      # Persist the registry (read offsets). Without this, recreating the
+      # container re-reads every log from the start and re-ships it all.
+      - filebeat_data:/usr/share/filebeat/data
     networks:
       hostnet: {}
     deploy:
@@ -39,8 +42,15 @@ services:
         max_attempts: 5
 
 configs:
-  filebeat_config_v2:
+  # Swarm configs are immutable: to change filebeat.yml, bump the version
+  # (v3 -> v4), update the service reference above, redeploy, then remove the
+  # old config. v3 = timestamp processors for suricata/auth (2026-10-01).
+  filebeat_config_v3:
     file: ./filebeat/filebeat.yml
+
+volumes:
+  filebeat_data:
+    name: filebeat_data   # explicit name: one local volume per node
 
 # Host networking gives each container direct access to the host's
 # network stack, including the tailscale0 interface needed to reach

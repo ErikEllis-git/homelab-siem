@@ -30,6 +30,15 @@ filebeat.inputs:
       log_type: suricata
       dataset: suricata.eve
     fields_under_root: true
+    processors:
+      # Use the event's own time as @timestamp (not the read time), so events
+      # backfilled after an ES outage land at the right time. Suricata format:
+      # 2026-10-01T14:40:06.275477-0400
+      - timestamp:
+          field: timestamp
+          layouts:
+            - "2006-01-02T15:04:05.999999Z0700"
+          ignore_failure: true
 
   # Host auth / security logs (SSH logins, sudo, PAM events)
   # ignore_missing: true handles OLDDELL if it uses /var/log/secure (RHEL-style)
@@ -43,6 +52,23 @@ filebeat.inputs:
       log_type: auth
       dataset: system.auth
     fields_under_root: true
+    processors:
+      # rsyslog ISO timestamps: "2026-09-20T16:50:12.439676-04:00 host prog[pid]: ..."
+      # Lines in another format (e.g. classic "Sep 20 16:50:12") fail the dissect
+      # and keep the read time, which is the previous behaviour.
+      - dissect:
+          tokenizer: "%{ts} %{rest}"
+          field: "message"
+          target_prefix: "_auth"
+          ignore_failure: true
+      - timestamp:
+          field: "_auth.ts"
+          layouts:
+            - "2006-01-02T15:04:05.999999Z07:00"
+          ignore_failure: true
+      - drop_fields:
+          fields: ["_auth"]
+          ignore_missing: true
 
 # ── Output ────────────────────────────────────────────────────
 

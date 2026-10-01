@@ -134,6 +134,16 @@ all primaries started. Shippers resumed, but **the backfill was imperfect** (che
 The last ES snapshot before the outage was 2026-09-26 02:30Z; the daily SLM policy resumes on
 its own schedule.
 
+**Remediation of the data impact (2026-10-01, later the same day):**
+
+- The missing Suricata window was **re-ingested**: 37,550 events from `eve.json.1.gz` (diffed
+  against ES first, 59 already-present events skipped) with `@timestamp` set from the event's own
+  time. Each is tagged `reingested: true`, so they can be found or removed:
+  `POST filebeat-*/_delete_by_query {"query":{"term":{"reingested":true}}}`.
+- **Not rewritten in place:** the ~311k Suricata/auth docs stamped 2026-10-01 18:10Z, and the
+  duplicated 09-20..09-26 auth events, are still as ingested. Rewriting them is possible but was
+  left alone (it modifies production data).
+
 ### Fixes
 
 1. **Boot ordering:** `systemd/docker.service.d/10-after-tailscale.conf` makes `docker.service`
@@ -141,7 +151,13 @@ its own schedule.
 2. **Detection:** `scripts/watchdog.py` now checks Elasticsearch (HTTP 200, cluster not red)
    every 10 minutes and alerts on Telegram (DOWN / RECOVERED).
 3. **Docs:** failure mode recorded in REMEDIATION.md (P0-1 side effect) and the README.
-4. **Side fixes found while verifying:** `geo_intel.py` now sends ip-api.com lookups in chunks of
+4. **Filebeat (`filebeat/filebeat.yml`, `docker-compose-filebeat.yml`):** `timestamp` processors
+   so Suricata and auth events keep their real time (ISO rsyslog lines only; other formats fall
+   back to read time), and a **persistent registry volume** (`filebeat_data`, one per node) so
+   recreating the container no longer re-reads every log. Rolled out as Swarm config `v3`
+   (configs are immutable: bump the version to change it); the live registry was copied into the
+   volume first and a post-deploy check showed no re-read.
+5. **Side fixes found while verifying:** `geo_intel.py` now sends ip-api.com lookups in chunks of
    100 (the batch endpoint rejects more, so runs with >100 new IPs lost all geo data); `selftest.py`
    (P2-6) committed and scheduled daily.
 
@@ -152,9 +168,9 @@ its own schedule.
   the system was running; none exercised a cold boot.
 - A monitor that doesn't watch its own datastore isn't monitoring. The pipeline's single point of
   failure (ES) was the one thing the watchdog skipped.
-- Filebeat only reads the live log file, so a long outage across a log rotation loses the rotated
-  (gzipped) data, and without a `timestamp` processor Suricata/auth events are stamped with their
-  read time rather than their event time. Both are worth fixing in `filebeat/filebeat.yml`.
+- Filebeat only reads the live log file, so a long outage across a log rotation still loses the
+  rotated (gzipped) data (recoverable by hand as above). The read-time stamping and the
+  non-persistent registry were fixed afterwards (Fixes, item 4).
 - Still open: a UPS, and finding out why the box lost power.
 
 ---

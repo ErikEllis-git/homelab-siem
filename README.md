@@ -156,6 +156,15 @@ sudo systemctl daemon-reload
 `watchdog.py` also alerts on Telegram if ES is down or the cluster is red. See `INCIDENTS.md`
 (Incident 002).
 
+### Changing the Filebeat config
+
+`filebeat.yml` is delivered as an immutable Swarm Config. To change it: edit `filebeat/filebeat.yml`,
+bump the config name in `docker-compose-filebeat.yml` (`filebeat_config_v3` → `v4`, in both
+places), then `set -a; . ./.env; set +a; docker stack deploy -c docker-compose-filebeat.yml filebeat`,
+and remove the old config afterwards. The registry lives in the per-node `filebeat_data` volume, so a
+redeploy resumes where it left off. On a **new** node, seed that volume first or Filebeat will
+re-read every log from the start.
+
 ---
 
 ## Deployment note (2026-09-13 rebuild)
