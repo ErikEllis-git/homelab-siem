@@ -8,6 +8,7 @@ Checks:
   - swarm-monitor.service       (systemd)
   - litellm-gateway             (docker container)
   - elasticsearch               (HTTP on 127.0.0.1:9200, cluster not red)
+  - kibana                      (127.0.0.1:5601/api/status reports 'available')
 
 Added 2026-10-01 after ES sat dead for 5 days unnoticed (see INCIDENTS.md,
 Incident 002). Everything else in the SIEM depends on ES, so a silent ES
@@ -39,7 +40,17 @@ CHECKS = {
     "swarm-monitor": lambda: _systemd_active("swarm-monitor"),
     "litellm-gateway": lambda: _docker_running("litellm-gateway"),
     "elasticsearch": lambda: _es_healthy(),
+    "kibana": lambda: _kibana_available(),
 }
+
+
+def _kibana_available() -> bool:
+    """Kibana can stay up-but-'unavailable' if it loses ES (seen 2026-10-01)."""
+    try:
+        r = requests.get("http://127.0.0.1:5601/api/status", timeout=5)
+        return r.status_code == 200 and r.json()["status"]["overall"]["level"] == "available"
+    except Exception:
+        return False
 
 
 def _es_healthy() -> bool:

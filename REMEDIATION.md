@@ -41,6 +41,14 @@ and every client ships over Tailscale):
 > `systemd/docker.service.d/10-after-tailscale.conf` (docker waits for tailscaled + the IP) and
 > an ES check in `watchdog.py`. Add a **cold-boot test** to this task's acceptance criteria:
 > reboot and confirm ES is up within ~2 minutes with no manual action.
+>
+> **Second side effect (found 2026-10-01):** the `DOCKER-USER` DROP on tcp/9200 also dropped
+> Kibana's container-to-container traffic (Kibana → `elasticsearch:9200` over `siem-net`), so Kibana
+> sat "unavailable". Fixed with `iptables -I DOCKER-USER 1 -s 172.19.0.0/16 -d 172.19.0.0/16 -p tcp
+> --dport 9200 -j ACCEPT` (persisted with `netfilter-persistent save`). Kibana's own port was also
+> published on all interfaces with no auth (a LAN-reachable route to ES via its console), so it is now
+> bound to `127.0.0.1` and the Tailscale IP like ES. Add **"Kibana can still reach ES"** to the
+> acceptance tests, and a Kibana check lives in `watchdog.py`.
 
 **Acceptance test**:
 - `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9200/_cat/indices` → `200`

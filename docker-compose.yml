@@ -42,7 +42,8 @@ services:
       - TELEMETRY_ENABLED=false
       - CSP_STRICT=false
     ports:
-      - "5601:5601"
+      - "127.0.0.1:5601:5601"
+      - "100.107.153.112:5601:5601"
     networks:
       - siem-net
     depends_on:
