@@ -58,7 +58,8 @@ NODES = [
                                  "-o", "ConnectTimeout=10",
                                  "-o", "StrictHostKeyChecking=no",
                                  env.get("WORKER1_SSH_TARGET", "user@worker1")]},
-    {"name": "worker2", "ssh": ["ssh", "-o", "ConnectTimeout=10",
+    {"name": "worker2", "ssh": ["ssh", "-i", str(Path.home() / ".ssh/id_rsa_swarm"),
+                                 "-o", "ConnectTimeout=10",
                                  "-o", "StrictHostKeyChecking=no",
                                  env.get("WORKER2_SSH_TARGET", "user@worker2")]},
 ]

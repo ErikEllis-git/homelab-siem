@@ -7,7 +7,7 @@ Scenarios:
                         filebeat → ES ingestion latency per node
   2. ssh_brute        — inject 15 synthetic SSH failure docs to ES, verify
                         brute_watch threshold logic would fire
-  3. port_scan        — nmap TCP connect scan against lubunt LAN IP, check
+  3. port_scan        — nmap TCP connect scan against hphdd LAN IP, check
                         Suricata detects and ships alert to ES
   4. cross_node       — inject same fake external IP on 2 nodes' auth logs,
                         verify anomaly_detector cross-node correlation fires
@@ -58,9 +58,16 @@ NODES_SSH = {
     "worker1": ["ssh", "-i", str(Path.home() / ".ssh/id_rsa_swarm"),
                 "-o", "ConnectTimeout=10", "-o", "StrictHostKeyChecking=no",
                 env.get("WORKER1_SSH_TARGET", "user@worker1")],
-    "worker2": ["ssh", "-o", "ConnectTimeout=10", "-o", "StrictHostKeyChecking=no",
+    "worker2": ["ssh", "-i", str(Path.home() / ".ssh/id_rsa_swarm"),
+                "-o", "ConnectTimeout=10", "-o", "StrictHostKeyChecking=no",
                 env.get("WORKER2_SSH_TARGET", "user@worker2")],
 }
+
+# The scenarios address nodes by logical name (rosse/rikdell/hphdd) but the table above is
+# keyed rosse/worker1/worker2. Without these aliases run_on_node() silently fell back to
+# running the command LOCALLY on rosee, so the per-worker ingestion test never touched a worker.
+NODES_SSH["rikdell"] = NODES_SSH["worker1"]
+NODES_SSH["hphdd"] = NODES_SSH["worker2"]
 
 # Worker 2 LAN IP — used for port scan so Suricata on eno1 sees the traffic
 LUBUNT_LAN_IP = env.get("WORKER2_LAN_IP", "")
@@ -202,7 +209,7 @@ def scenario_log_ingestion(run_id: str, conn: sqlite3.Connection,
     print("\n[purple] scenario: log_ingestion_latency")
     results = []
 
-    for node in ["rosse", "rikdell", "lubunt"]:
+    for node in ["rosse", "rikdell", "hphdd"]:
         marker    = f"purple-team-ingest-{run_id[:12]}-{node}"
         ts_before = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
@@ -356,7 +363,7 @@ def scenario_port_scan(run_id: str, conn: sqlite3.Connection,
     print("\n[purple] scenario: port_scan")
 
     target_ip   = LUBUNT_LAN_IP
-    target_node = "lubunt"
+    target_node = "hphdd"
     ports       = "22,25,80,443,3306,5432,5900,8080,8443"
 
     if dry_run:

@@ -24,7 +24,7 @@ SWARM_KEY = "/home/rosee/.ssh/id_rsa_swarm"
 NODE_SSH_TARGETS = {
     "optiplex7010": None,  # this machine (rosee) — queried locally, no SSH
     "OLDDELL": "rikdell@100.81.199.45",
-    "LUBUNT": "rikbeans@100.69.79.119",
+    "hpHDD": "eliana@100.114.24.40",   # HP Pavilion 14 worker, added 2026-10-14 (replaces lubunt)
 }
 
 
