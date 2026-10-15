@@ -1,0 +1,10 @@
+[Unit]
+Description=hpHDD thermal sampling every 30s
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=30s
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

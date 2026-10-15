@@ -87,6 +87,26 @@ def es_health() -> str:
     return requests.get(f"{ES_HOST}/_cluster/health", timeout=10).json().get("status", "unknown")
 
 
+def thermal_summary() -> str:
+    """Per-node 24h thermal digest from thermal-* (written by thermal_check.py)."""
+    try:
+        d = es_search("thermal-*", {"size": 0, "query": {"range": {"@timestamp": {"gte": LOOKBACK}}},
+            "aggs": {"n": {"terms": {"field": "node.keyword", "size": 10}, "aggs": {
+                "cmax": {"max": {"field": "cpu_pkg_c"}}, "cavg": {"avg": {"field": "cpu_pkg_c"}},
+                "hmax": {"max": {"field": "hdd_c"}},
+                "tmax": {"max": {"field": "throttle_pkg_count"}}, "tmin": {"min": {"field": "throttle_pkg_count"}},
+                "bat": {"filter": {"term": {"ac_online": 0}}}}}}})
+        rows = []
+        for b in d["aggregations"]["n"]["buckets"]:
+            thr = int((b["tmax"]["value"] or 0) - (b["tmin"]["value"] or 0))
+            batt = round(100 * b["bat"]["doc_count"] / max(b["doc_count"], 1))
+            rows.append(f"  {b['key']}: CPU max {b['cmax']['value']:.0f}C avg {b['cavg']['value']:.0f}C | "
+                        f"HDD max {b['hmax']['value'] or 0:.0f}C | throttle events {thr} | on battery {batt}%")
+        return "\n".join(rows) or "  no thermal data"
+    except Exception as e:
+        return f"  unavailable ({type(e).__name__})"
+
+
 def send_telegram(text: str) -> bool:
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         print("[morning_report] TELEGRAM_TOKEN/TELEGRAM_CHAT_ID not set")
@@ -116,6 +136,7 @@ def main() -> int:
     sessions, logins = cowrie_stats()
     web_reqs = count("webhoneypot-*", {"range": {"@timestamp": {"gte": LOOKBACK}}})
     disk, health = disk_pct(), es_health()
+    thermal = thermal_summary()
 
     text = "\n".join([
         "☀️ Morning SOC Report — last 24h", "",
@@ -124,6 +145,7 @@ def main() -> int:
         f"SSH auth by node:\n{ssh_lines}", "",
         f"Cowrie: {sessions} sessions, {logins} successful logins",
         f"Web honeypot: {web_reqs} requests", "",
+        f"Thermals:\n{thermal}", "",
         f"Disk usage: {disk}%  |  ES cluster: {health}",
     ])
     print(text)

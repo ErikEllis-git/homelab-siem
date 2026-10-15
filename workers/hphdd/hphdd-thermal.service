@@ -1,0 +1,6 @@
+[Unit]
+Description=Sample hpHDD thermal sensors (CPU/HDD temps, throttle counters)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/bin/hphdd-thermal-sample.py

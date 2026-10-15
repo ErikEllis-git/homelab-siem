@@ -66,6 +66,21 @@ def _():
     return n > 0, f"{n} events in last 1h"
 
 
+@check("thermal-fresh")
+def _():
+    # Age of the NEWEST sample, not a count: a count check fails for the first hour of any new
+    # deployment. Sampler writes every 30 s, thermal_check.py ingests every 5 min, so anything
+    # older than ~15 min means the sampler, the SSH pull, or the ingest has stopped.
+    from datetime import datetime, timezone
+    r = requests.post(f"{ES}/thermal-*/_search", json={"size": 1, "sort": [{"@timestamp": "desc"}],
+                      "_source": ["@timestamp"]}, timeout=10).json()
+    hits = r.get("hits", {}).get("hits", [])
+    if not hits:
+        return False, "no thermal samples in Elasticsearch at all"
+    age = (datetime.now(timezone.utc) - datetime.fromisoformat(hits[0]["_source"]["@timestamp"])).total_seconds() / 60
+    return age < 15, f"newest thermal sample is {age:.0f} min old (limit 15)"
+
+
 @check("webhoneypot-index")
 def _():
     # web traffic is burstier; just require the index exists + is queryable
