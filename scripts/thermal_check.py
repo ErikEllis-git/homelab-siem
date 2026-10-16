@@ -46,7 +46,8 @@ PKG_WARN = _f("THERMAL_PKG_WARN", 80)
 PKG_CRIT = _f("THERMAL_PKG_CRIT", 90)
 HDD_WARN = _f("THERMAL_HDD_WARN", 50)
 HDD_CRIT = _f("THERMAL_HDD_CRIT", 55)
-IDLE_HOT = _f("THERMAL_IDLE_HOT", 65)
+IDLE_HOT = _f("THERMAL_IDLE_HOT", 72)
+IDLE_STREAK = 6        # consecutive 5-min runs (~30 min) idle_hot must hold before alerting
 DRIFT_C = _f("THERMAL_DRIFT_C", 8)
 WINDOW = 10            # samples (~5 min)
 SUSTAIN_WARN = 6       # of WINDOW samples >= PKG_WARN  (~3 min sustained)
@@ -242,6 +243,12 @@ def main():
                     probs["stale"] = ("warn", f"no thermal sample for {int((now - latest['ts']) / 60)} min but the node answers SSH — sampler/timer stopped?")
                 prev = st["thr"]
                 probs.update(evaluate(win, prev))
+                if "idle_hot" in probs:
+                    st["idle_streak"] = st.get("idle_streak", 0) + 1
+                    if st["idle_streak"] < IDLE_STREAK:
+                        del probs["idle_hot"]
+                else:
+                    st["idle_streak"] = 0
                 st["thr"] = {"pkg": latest.get("throttle_pkg_count", 0), "core": latest.get("throttle_core_count", 0),
                              "ms": latest.get("throttle_pkg_ms", 0)}
             else:
@@ -267,7 +274,7 @@ def main():
             tail = f"\n{summary(latest)}" if latest else ""
             telegram(f"{head} on {node}:\n{body}{tail}")
             st["last_alert"] = now
-        elif not codes and prev_codes:
+        elif not codes and prev_codes and any(v[0] == "crit" for v in st["active"].values()):
             telegram(f"THERMAL RECOVERED on {node}." + (f"\n{summary(latest)}" if latest else ""))
         st["active"] = {k: list(v) for k, v in probs.items()}
 
