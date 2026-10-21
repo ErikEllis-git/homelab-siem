@@ -6,7 +6,7 @@ top-down (P0 → P2). Commit each task separately with a message referencing its
 `P0-1: bind Elasticsearch to trusted interfaces`). Push to `ErikEllis-git/homelab-siem`.
 After each tier, stop for review (a reviewer will check the acceptance tests).
 
-**Access**: rosee = `ssh rosee@100.107.153.112`; honeypot = `ssh -p 2222 ubuntu@150.136.222.105`;
+**Access**: rosee = `ssh rosee@100.107.153.112`; honeypot = `ssh -p <ADMIN_PORT> <user>@<HONEYPOT_IP>`;
 rikdell = `ssh -i ~/.ssh/id_rsa_swarm rikdell@100.81.199.45`. Repo cloned on rosee at
 `~/repos/homelab-siem`. Secrets live in `~/repos/homelab-siem/.env` (symlinked from `~/.env`);
 never print or commit them. Commit attribution: Erik's name only (plus the Claude co-author
@@ -154,7 +154,7 @@ container healthy after restart (`docker ps`, logs show "Ready to accept SSH con
 honeypot section produces empty files.
 **Change**: authorize rosee's `~/.ssh/id_rsa_swarm.pub` in the honeypot's
 `~ubuntu/.ssh/authorized_keys`, and pre-seed the host key in rosee's `~/.ssh/known_hosts`
-(`ssh-keyscan -p 2222 150.136.222.105`). Confirm `backup_configs.sh` now captures non-empty
+(`ssh-keyscan -p <ADMIN_PORT> <HONEYPOT_IP>`). Confirm `backup_configs.sh` now captures non-empty
 honeypot files. (Alternative if key-sharing is undesirable: have the honeypot push its own
 configs to the repo via its own cron — but the key approach is simpler.)
 **Acceptance test**: run `bash backup_configs.sh`; `configs/honeypot/cowrie.cfg` and
@@ -173,7 +173,7 @@ policy taking a daily snapshot, retaining ~14 days. Document the restore command
 an attacker can spoof to poison analytics / frame an innocent IP.
 **Change**: use `request.remote_addr` as the authoritative source IP; keep XFF only as a
 secondary/informational field clearly labeled untrusted. Rebuild + redeploy the container.
-**Acceptance test**: `curl -H 'X-Forwarded-For: 1.2.3.4' http://150.136.222.105/.env` then check
+**Acceptance test**: `curl -H 'X-Forwarded-For: 1.2.3.4' http://<HONEYPOT_IP>/.env` then check
 the newest `webhoneypot-*` doc — `src_ip` is the real client IP, not `1.2.3.4`.
 
 ### P2-4 — Add container resource limits
