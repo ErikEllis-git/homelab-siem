@@ -80,6 +80,9 @@ siem/
 │   ├── purple_team.py          # Weekly automated detection coverage tests
 │   ├── watchdog.py             # Health checks (ES, incident-responder, swarm-monitor, LiteLLM)
 │   ├── es_retention.sh         # Index cleanup
+│   ├── photo_backup_check.py   # Immich photo backup health (hourly)
+│   ├── build_kibana_dashboard.py # Builds the "Homelab Security Overview" dashboard
+│   ├── build_ops_dashboard.py  # Builds the "Homelab Operations" dashboard
 │   └── requirements.txt
 └── systemd/
     ├── suricata-alerter.service
@@ -118,6 +121,35 @@ sudo systemctl enable --now suricata-alerter incident-responder
 ```
 
 ---
+
+## Dashboards
+
+Both Kibana dashboards are built by script through the Kibana API, so they can be
+recreated after a rebuild without clicking through the UI. Run them on the main node
+with the scripts venv:
+
+```bash
+cd scripts
+.venv/bin/python3 build_kibana_dashboard.py   # Homelab Security Overview
+.venv/bin/python3 build_ops_dashboard.py      # Homelab Operations
+```
+
+| Dashboard | Id | What it shows |
+|-----------|----|---------------|
+| Homelab Security Overview | `homelab-security-overview` | Suricata alerts, SSH auth events, Cowrie and web honeypot activity |
+| Homelab Operations | `homelab-operations` | Log volume per node and by type, worker CPU/HDD temperature, load and thermal-throttle counter, LAN hosts up, new open-port alerts, plus the Cowrie and Suricata timelines |
+
+Open them at `http://<kibana-host>:5601/app/dashboards`.
+
+`build_ops_dashboard.py` is safe to re-run: it looks data views up by title before
+creating them (`filebeat-8.15.0*`, `thermal-*`, `nmap-scans*`) and only overwrites its
+own `ops-*` visualizations and the `homelab-operations` dashboard. It shows two
+visualizations from the security overview by reference and does not modify them.
+`build_kibana_dashboard.py` creates its data views unconditionally, so only run it on a
+Kibana that does not have them yet.
+
+To roll the operations dashboard back, delete the `homelab-operations` dashboard and
+the `ops-*` visualizations under Stack Management → Saved Objects.
 
 ## How alerts work
 
